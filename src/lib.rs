@@ -48,9 +48,9 @@ impl Tuid {
     }
 }
 
-
+/// Convert u16 to u8 with rescaling process
 fn rescale_low(value: u16) -> u8 {
-    let new_val = (value as f32) * (255.0) / (999.0);
+    let new_val = (value as f32) * (256.0) / (1000.0);
     new_val as u8
 }
 
@@ -70,9 +70,10 @@ mod tests {
         assert_eq!(rescale_low(0), 0);
         assert_eq!(rescale_low(1), 0);
         assert_eq!(rescale_low(5), 1);
-        assert_eq!(rescale_low(500), 127);
-        assert_eq!(rescale_low(502), 128);
-        assert_eq!(rescale_low(997), 254);
+        assert_eq!(rescale_low(498), 127);
+        assert_eq!(rescale_low(500), 128);
+        assert_eq!(rescale_low(995), 254);
+        assert_eq!(rescale_low(997), 255);
         assert_eq!(rescale_low(999), 255);
     }
 }
