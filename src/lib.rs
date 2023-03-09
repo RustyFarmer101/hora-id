@@ -19,13 +19,13 @@ pub struct Tuid {
 
 impl Tuid {
     /// Generate a new TUID
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self, String> {
         let mut now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_millis() as u64;
         if now < EPOCH {
-            panic!("Your device time is incorrect.")
+            return Err("Your device time is incorrect.".to_owned());
         }
         now = now - EPOCH;
 
@@ -51,7 +51,7 @@ impl Tuid {
         tuid[6] = rng.gen::<u8>();
         tuid[7] = rng.gen::<u8>();
 
-        Self { inner: tuid }
+        Ok(Self { inner: tuid })
     }
 
     pub fn to_string(&self) -> String {
@@ -82,7 +82,7 @@ mod tests {
     #[test]
     fn it_works() {
         let id = Tuid::new();
-        println!("{:?}", id.to_string());
+        assert!(id.is_ok());
     }
 
     #[test]
