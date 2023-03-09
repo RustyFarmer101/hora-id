@@ -6,21 +6,29 @@
 //! - 4 byte timestamp high
 //! - 1 byte timestamp low
 //! - 3 bytes of randomness
-use std::time::{SystemTime, UNIX_EPOCH};
 use rand::prelude::*;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 // Unix Epoch on Jan 01 2023 12:00:00 am
 const EPOCH: u64 = 1672531200000;
 
 #[derive(Debug)]
 pub struct Tuid {
-    inner: [u8;8]
+    inner: [u8; 8],
 }
 
 impl Tuid {
     /// Generate a new TUID
     pub fn new() -> Self {
-        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64 - EPOCH;
+        let mut now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+        if now < EPOCH {
+            panic!("Your device time is incorrect.")
+        }
+        now = now - EPOCH;
+
         let high = (now / 1000) as u32;
         let low = (now % 1000) as u16;
 
@@ -35,8 +43,7 @@ impl Tuid {
         tuid[3] = bytes[3];
 
         // set time low
-        let new_low = rescale_low(low);
-        tuid[4] = new_low;
+        tuid[4] = rescale_low(low);
 
         // add randomness
         let mut rng = rand::thread_rng();
@@ -44,7 +51,21 @@ impl Tuid {
         tuid[6] = rng.gen::<u8>();
         tuid[7] = rng.gen::<u8>();
 
-        Self{inner: tuid}
+        Self { inner: tuid }
+    }
+
+    pub fn to_string(&self) -> String {
+        format!(
+            "{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+            self.inner[0],
+            self.inner[1],
+            self.inner[2],
+            self.inner[3],
+            self.inner[4],
+            self.inner[5],
+            self.inner[6],
+            self.inner[7]
+        )
     }
 }
 
@@ -54,7 +75,6 @@ fn rescale_low(value: u16) -> u8 {
     new_val as u8
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -62,7 +82,7 @@ mod tests {
     #[test]
     fn it_works() {
         let id = Tuid::new();
-        println!("{:?}", id);
+        println!("{:?}", id.to_string());
     }
 
     #[test]
