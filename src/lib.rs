@@ -12,33 +12,40 @@ use rand::prelude::*;
 // Unix Epoch on Jan 01 2023 12:00:00 am
 const EPOCH: u64 = 1672531200000;
 
-/// Generate a new TUID
-fn new() {
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64 - EPOCH;
-    let high = (now / 1000) as u32;
-    let low = (now % 1000) as u16;
+#[derive(Debug)]
+pub struct Tuid {
+    inner: [u8;8]
+}
 
-    // create a default bytes array
-    let mut tuid = [0u8;8];
+impl Tuid {
+    /// Generate a new TUID
+    pub fn new() -> Self {
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64 - EPOCH;
+        let high = (now / 1000) as u32;
+        let low = (now % 1000) as u16;
 
-    // set time high
-    let bytes = high.to_be_bytes();
-    tuid[0] = bytes[0];
-    tuid[1] = bytes[1];
-    tuid[2] = bytes[2];
-    tuid[3] = bytes[3];
+        // create a default bytes array
+        let mut tuid = [0u8; 8];
 
-    // set time low
-    let new_low = rescale_low(low);
-    tuid[4] = new_low;
+        // set time high
+        let bytes = high.to_be_bytes();
+        tuid[0] = bytes[0];
+        tuid[1] = bytes[1];
+        tuid[2] = bytes[2];
+        tuid[3] = bytes[3];
 
-    // add randomness
-    let mut rng = rand::thread_rng();
-    tuid[5] = rng.gen::<u8>();
-    tuid[6] = rng.gen::<u8>();
-    tuid[7] = rng.gen::<u8>();
+        // set time low
+        let new_low = rescale_low(low);
+        tuid[4] = new_low;
 
-    println!("{:?}", tuid);
+        // add randomness
+        let mut rng = rand::thread_rng();
+        tuid[5] = rng.gen::<u8>();
+        tuid[6] = rng.gen::<u8>();
+        tuid[7] = rng.gen::<u8>();
+
+        Self{inner: tuid}
+    }
 }
 
 
@@ -54,10 +61,8 @@ mod tests {
 
     #[test]
     fn it_works() {
-        new();
-        new();
-        new();
-        assert!(5810077238 < u64::MAX);
+        let id = Tuid::new();
+        println!("{:?}", id);
     }
 
     #[test]
