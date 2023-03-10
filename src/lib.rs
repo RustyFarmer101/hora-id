@@ -6,6 +6,9 @@
 //! - 4 byte timestamp high
 //! - 1 byte timestamp low
 //! - 3 bytes of randomness
+
+#[cfg(feature = "chrono")]
+use chrono::{DateTime, NaiveDateTime, Utc};
 use rand::prelude::*;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -67,6 +70,23 @@ impl Tuid {
             self.inner[7]
         )
     }
+
+    // This conditionally includes a module which implements chrono support.
+    #[cfg(feature = "chrono")]
+    pub fn to_chrono(&self) -> DateTime<Utc> {
+        let mut high = [0; 4];
+        for i in 0..4 {
+            high[i] = self.inner[i];
+        }
+        let high = u32::from_be_bytes(high);
+        let low = u8::from_be_bytes([self.inner[4]]);
+        let low = upscale_low(low);
+
+        let timestamp = (high as u64 * 1000) + low as u64 + EPOCH;
+        let timestamp = NaiveDateTime::from_timestamp_millis(timestamp as i64).unwrap();
+        let datetime = DateTime::<Utc>::from_utc(timestamp, Utc);
+        datetime
+    }
 }
 
 /// Convert u16 to u8 with rescaling process
@@ -75,14 +95,33 @@ fn rescale_low(value: u16) -> u8 {
     new_val as u8
 }
 
+fn upscale_low(value: u8) -> u16 {
+    let new_val = (value as f32) * (1000.0) / 256.0;
+    new_val as u16
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(feature = "chrono")]
+    use chrono::Timelike;
 
     #[test]
     fn it_works() {
         let id = Tuid::new();
         assert!(id.is_ok());
+    }
+
+    #[cfg(feature = "chrono")]
+    #[test]
+    fn chrono() {
+        let id = Tuid::new().unwrap();
+        let time = id.to_chrono();
+        let now = Utc::now();
+        assert_eq!(now.date_naive(), time.date_naive());
+        assert_eq!(now.hour(), time.hour());
+        assert_eq!(now.minute(), time.minute());
+        assert_eq!(now.second(), time.second());
     }
 
     #[test]
@@ -95,5 +134,11 @@ mod tests {
         assert_eq!(rescale_low(995), 254);
         assert_eq!(rescale_low(997), 255);
         assert_eq!(rescale_low(999), 255);
+    }
+
+    #[test]
+    fn rescale() {
+        let value = upscale_low(rescale_low(500));
+        assert_eq!(value, 500);
     }
 }
