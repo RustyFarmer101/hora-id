@@ -71,6 +71,16 @@ impl Tuid {
         )
     }
 
+    pub fn from_str(s: &str) -> Option<Self> {
+        if s.len() != 16 {
+            return None;
+        }
+        let num = u64::from_str_radix(s, 16).ok()?;
+        let bytes: [u8; 8] = num.to_be_bytes();
+        let id = Self { inner: bytes };
+        Some(id)
+    }
+
     // This conditionally includes a module which implements chrono support.
     #[cfg(feature = "chrono")]
     pub fn to_chrono(&self) -> DateTime<Utc> {
@@ -110,6 +120,15 @@ mod tests {
     fn it_works() {
         let id = Tuid::new();
         assert!(id.is_ok());
+    }
+
+    #[test]
+    fn strings() {
+        let source_id = Tuid::new().unwrap();
+        let s = source_id.to_string();
+        let id = Tuid::from_str(&s);
+        let derived_id = id.unwrap();
+        assert_eq!(source_id.to_string(), derived_id.to_string());
     }
 
     #[cfg(feature = "chrono")]
