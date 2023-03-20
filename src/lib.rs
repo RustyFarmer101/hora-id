@@ -10,10 +10,27 @@
 #[cfg(feature = "chrono")]
 use chrono::{DateTime, NaiveDateTime, Utc};
 use rand::prelude::*;
+use std::collections::HashSet;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 // Unix Epoch on Jan 01 2023 12:00:00 am
 const EPOCH: u64 = 1672531200000;
+
+// pub enum TuidVersion {
+//     V1,
+//     V2,
+// }
+//
+// pub struct TuidGenerator {
+//     queue: HashSet<[u8; 8]>,
+//     last_clean: u64,
+// }
+//
+// impl TuidGenerator {
+//     pub fn new(v: TuidVersion) -> Self {
+//
+//     }
+// }
 
 #[derive(Debug)]
 pub struct Tuid {
@@ -22,7 +39,7 @@ pub struct Tuid {
 
 impl Tuid {
     /// Generate a new TUID
-    pub fn new() -> Result<Self, String> {
+    pub fn new(machine_id: Option<u8>) -> Result<Self, String> {
         let mut now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -50,7 +67,7 @@ impl Tuid {
 
         // add randomness
         let mut rng = rand::thread_rng();
-        tuid[5] = rng.gen::<u8>();
+        tuid[5] = machine_id.unwrap_or_else(|| rng.gen::<u8>());
         tuid[6] = rng.gen::<u8>();
         tuid[7] = rng.gen::<u8>();
 
@@ -118,13 +135,13 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let id = Tuid::new();
+        let id = Tuid::new(None);
         assert!(id.is_ok());
     }
 
     #[test]
     fn strings() {
-        let source_id = Tuid::new().unwrap();
+        let source_id = Tuid::new(None).unwrap();
         let s = source_id.to_string();
         let id = Tuid::from_str(&s);
         let derived_id = id.unwrap();
@@ -134,7 +151,7 @@ mod tests {
     #[cfg(feature = "chrono")]
     #[test]
     fn chrono() {
-        let id = Tuid::new().unwrap();
+        let id = Tuid::new(None).unwrap();
         let time = id.to_chrono();
         let now = Utc::now();
         assert_eq!(now.date_naive(), time.date_naive());
