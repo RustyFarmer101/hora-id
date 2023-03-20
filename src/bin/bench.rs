@@ -1,10 +1,11 @@
 use std::collections::{HashMap, HashSet};
-use tuid::Tuid;
+use tuid::TuidGenerator;
 
 const SIZE: usize = 1_000_000;
 
 fn main() {
     let mut data = Vec::with_capacity(SIZE);
+    let mut generator = TuidGenerator::new(101).expect("Error B123l");
 
     let mut counter = 0;
     loop {
@@ -13,7 +14,7 @@ fn main() {
             break;
         }
 
-        let id = Tuid::new().unwrap();
+        let id = generator.generate();
         data.push(id.to_string());
     }
 

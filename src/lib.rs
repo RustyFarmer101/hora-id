@@ -16,21 +16,58 @@ use std::time::{SystemTime, UNIX_EPOCH};
 // Unix Epoch on Jan 01 2023 12:00:00 am
 const EPOCH: u64 = 1672531200000;
 
-// pub enum TuidVersion {
-//     V1,
-//     V2,
-// }
-//
-// pub struct TuidGenerator {
-//     queue: HashSet<[u8; 8]>,
-//     last_clean: u64,
-// }
-//
-// impl TuidGenerator {
-//     pub fn new(v: TuidVersion) -> Self {
-//
-//     }
-// }
+fn current_epoch() -> Result<u64, String> {
+    let mut now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64;
+    if now < EPOCH {
+        return Err("Your device time is incorrect.".to_owned());
+    }
+    now = now - EPOCH;
+    Ok(now)
+}
+
+pub struct TuidGenerator {
+    machine_id: u8,
+    queue: HashSet<[u8; 8]>,
+    last_clean: u32,
+    last_gen: u32,
+}
+
+impl TuidGenerator {
+    pub fn new(id: u8) -> Result<Self, String> {
+        let epoch = current_epoch()?;
+        let epoch = (epoch / 1000) as u32;
+        Ok(Self {
+            machine_id: id,
+            queue: HashSet::new(),
+            last_clean: epoch,
+            last_gen: epoch,
+        })
+    }
+
+    pub fn generate(&mut self) -> Tuid {
+        loop {
+            let epoch = current_epoch().unwrap();
+            // clean the queue
+            let epoch_high = (epoch / 1000) as u32;
+            if epoch_high > self.last_gen && !self.queue.is_empty() {
+                self.last_clean = epoch_high;
+                self.queue.clear();
+            }
+            // generate_id
+            let id = Tuid::with_epoch(Some(self.machine_id), epoch);
+            // detect duplicate ID
+            if self.queue.contains(&id.inner) {
+                continue;
+            }
+            self.queue.insert(id.inner.clone());
+            self.last_gen = epoch_high;
+            break id;
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct Tuid {
@@ -40,17 +77,14 @@ pub struct Tuid {
 impl Tuid {
     /// Generate a new TUID
     pub fn new(machine_id: Option<u8>) -> Result<Self, String> {
-        let mut now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis() as u64;
-        if now < EPOCH {
-            return Err("Your device time is incorrect.".to_owned());
-        }
-        now = now - EPOCH;
+        let epoch = current_epoch()?;
+        let id = Self::with_epoch(machine_id, epoch);
+        Ok(id)
+    }
 
-        let high = (now / 1000) as u32;
-        let low = (now % 1000) as u16;
+    fn with_epoch(machine_id: Option<u8>, epoch: u64) -> Self {
+        let high = (epoch / 1000) as u32;
+        let low = (epoch % 1000) as u16;
 
         // create a default bytes array
         let mut tuid = [0u8; 8];
@@ -71,7 +105,7 @@ impl Tuid {
         tuid[6] = rng.gen::<u8>();
         tuid[7] = rng.gen::<u8>();
 
-        Ok(Self { inner: tuid })
+        Self { inner: tuid }
     }
 
     pub fn to_string(&self) -> String {
@@ -176,5 +210,18 @@ mod tests {
     fn rescale() {
         let value = upscale_low(rescale_low(500));
         assert_eq!(value, 500);
+    }
+}
+
+#[cfg(test)]
+mod gen_tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        let generator = TuidGenerator::new(1);
+        assert!(generator.is_ok());
+        let mut generator = generator.unwrap();
+        let id = generator.generate();
     }
 }
