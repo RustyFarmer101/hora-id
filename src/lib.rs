@@ -13,9 +13,14 @@ use rand::prelude::*;
 use std::collections::HashSet;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-// Unix Epoch on Jan 01 2023 12:00:00 am
+/// Unix Epoch on Jan 01 2023 12:00:00 am
 const EPOCH: u64 = 1672531200000;
 
+/// Get the current epoch with base epoch starting at [EPOCH]
+///
+/// ## Fail condition
+/// If the system time is incorrect and before the [EPOCH] time
+///
 fn current_epoch() -> Result<u64, String> {
     let mut now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -28,25 +33,36 @@ fn current_epoch() -> Result<u64, String> {
     Ok(now)
 }
 
+/// TUID Generator with guarantee to generate unique IDs on a single machine
+///
+/// # Benchmark
+/// On my machine running Apple M1 Max chip, the generator produces, on average,
+/// 2.05 Million IDs per second on a single core in release builds.
+///
 pub struct TuidGenerator {
+    /// Unique Machine identifier with support for max 256 unique machines
     machine_id: u8,
+    /// History of generated IDs to ensure uniqueness
     queue: HashSet<[u8; 8]>,
+    /// Last time the queue was cleared
     last_clean: u32,
+    /// Last time an ID was generated
     last_gen: u32,
 }
 
 impl TuidGenerator {
-    pub fn new(id: u8) -> Result<Self, String> {
+    pub fn new(machine_id: u8) -> Result<Self, String> {
         let epoch = current_epoch()?;
         let epoch = (epoch / 1000) as u32;
         Ok(Self {
-            machine_id: id,
+            machine_id,
             queue: HashSet::new(),
             last_clean: epoch,
             last_gen: epoch,
         })
     }
 
+    /// Generate a new TUID
     pub fn generate(&mut self) -> Tuid {
         loop {
             let epoch = current_epoch().unwrap();
@@ -69,6 +85,13 @@ impl TuidGenerator {
     }
 }
 
+/// A time-sorted 8-byte (64-bit) unique identifier
+///
+/// # Breakdown
+/// The first 4 bytes represent the [EPOCH] timestamp
+/// The 5th byte represents timestamp low (in milliseconds)
+/// THe last 3 bytes are random
+///
 #[derive(Debug)]
 pub struct Tuid {
     inner: [u8; 8],
@@ -76,6 +99,11 @@ pub struct Tuid {
 
 impl Tuid {
     /// Generate a new TUID
+    ///
+    /// ## Caution
+    /// Calling this method doesn't guarantee a unique ID for every call.
+    /// This method shall only be used when you need to generate a new id rapidly.
+    ///
     pub fn new(machine_id: Option<u8>) -> Result<Self, String> {
         let epoch = current_epoch()?;
         let id = Self::with_epoch(machine_id, epoch);
@@ -100,7 +128,7 @@ impl Tuid {
         tuid[4] = rescale_low(low);
 
         // add randomness
-        let mut rng = rand::thread_rng();
+        let mut rng = thread_rng();
         tuid[5] = machine_id.unwrap_or_else(|| rng.gen::<u8>());
         tuid[6] = rng.gen::<u8>();
         tuid[7] = rng.gen::<u8>();
