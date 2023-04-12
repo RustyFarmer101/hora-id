@@ -1,9 +1,11 @@
 use std::collections::{HashMap, HashSet};
+use std::time::Instant;
 use tuid::TuidGenerator;
 
-const SIZE: usize = 1_000_000;
+const SIZE: usize = 10_000_000;
 
 fn main() {
+    let time = Instant::now();
     let mut data = Vec::with_capacity(SIZE);
     let mut generator = TuidGenerator::new(101).expect("Error B123l");
 
@@ -42,9 +44,10 @@ fn main() {
     }
 
     println!(
-        "total {}, unique {}, duplicates {}",
+        "total {}, unique {}, duplicates {} in {:?}",
         SIZE,
         SIZE - counter,
-        counter
+        counter,
+        time.elapsed()
     );
 }
