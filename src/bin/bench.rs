@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::time::Instant;
 use tuid::TuidGenerator;
 
@@ -16,7 +16,7 @@ fn main() {
             break;
         }
 
-        let id = generator.generate();
+        let id = generator.next();
         data.push(id.to_string());
     }
 

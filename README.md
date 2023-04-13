@@ -17,7 +17,7 @@ use tuid::{TuidGenerator, Tuid};
 let machine_id = 1;
 let mut generator: TuidGenerator = TuidGenerator::new(machine_id).unwrap();
 
-let id: Tuid = generator.generate();
+let id: Tuid = generator.next();
 println!("{}", id.to_string());
 ```
 

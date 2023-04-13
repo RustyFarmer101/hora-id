@@ -64,7 +64,7 @@ impl TuidGenerator {
     }
 
     /// Generate a new TUID
-    pub fn generate(&mut self) -> Tuid {
+    pub fn next(&mut self) -> Tuid {
         loop {
             let epoch = current_epoch().unwrap();
             // clean the queue
@@ -261,6 +261,6 @@ mod gen_tests {
         let generator = TuidGenerator::new(1);
         assert!(generator.is_ok());
         let mut generator = generator.unwrap();
-        let id = generator.generate();
+        let id = generator.next();
     }
 }
