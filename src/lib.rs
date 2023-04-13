@@ -37,7 +37,7 @@ fn current_epoch() -> Result<u64, String> {
 ///
 /// # Benchmark
 /// On my machine running Apple M1 Max chip, the generator produces, on average,
-/// 2.05 Million IDs per second on a single core in release builds
+/// 2.5 Million IDs per second on a single core in release builds
 /// using the bench binary included in the codebase.
 ///
 pub struct TuidGenerator {

@@ -1,7 +1,7 @@
 # TUID
 A time-sorted 8-byte unique ID generator for distributed systems. TUIDs are time-sorted and only 8 bytes long, which is half the length of a UUID and ULID.
 
-TUID supports upto 256 unique machines and generates about 2 million IDs per second for a single machine. That's a total of maximum 512 million IDs per second.
+TUID supports upto 256 unique machines and generates about 2.5 million IDs per second for a single machine. That's a total of maximum 640 million IDs per second.
 
 # Composition
 TUID has 3 parts:
