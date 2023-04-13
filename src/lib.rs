@@ -37,7 +37,8 @@ fn current_epoch() -> Result<u64, String> {
 ///
 /// # Benchmark
 /// On my machine running Apple M1 Max chip, the generator produces, on average,
-/// 2.05 Million IDs per second on a single core in release builds.
+/// 2.05 Million IDs per second on a single core in release builds
+/// using the bench binary included in the codebase.
 ///
 pub struct TuidGenerator {
     /// Unique Machine identifier with support for max 256 unique machines
@@ -98,7 +99,7 @@ pub struct Tuid {
 }
 
 impl Tuid {
-    /// Generate a new TUID
+    /// Quickly generate a new TUID
     ///
     /// ## Caution
     /// Calling this method doesn't guarantee a unique ID for every call.
@@ -110,6 +111,12 @@ impl Tuid {
         Ok(id)
     }
 
+    /// Generate a new TUID with custom epoch
+    ///
+    /// ## More info
+    /// This method is mainly used by the [TuidGenerator] generator to get a new [Tuid].
+    /// THe `Tuid::new` method also calls this method after getting the current epoch.
+    ///
     fn with_epoch(machine_id: Option<u8>, epoch: u64) -> Self {
         let high = (epoch / 1000) as u32;
         let low = (epoch % 1000) as u16;
@@ -136,6 +143,7 @@ impl Tuid {
         Self { inner: tuid }
     }
 
+    /// Convert a [Tuid] to a [String]
     pub fn to_string(&self) -> String {
         format!(
             "{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
@@ -150,6 +158,7 @@ impl Tuid {
         )
     }
 
+    /// Create a [Tuid] from a string slice
     pub fn from_str(s: &str) -> Option<Self> {
         if s.len() != 16 {
             return None;
@@ -160,7 +169,8 @@ impl Tuid {
         Some(id)
     }
 
-    // This conditionally includes a module which implements chrono support.
+    /// Retrieve a chrono datetime from [Tuid]
+    /// This conditionally includes a module which implements chrono support.
     #[cfg(feature = "chrono")]
     pub fn to_chrono(&self) -> DateTime<Utc> {
         let mut high = [0; 4];
@@ -184,6 +194,7 @@ fn rescale_low(value: u16) -> u8 {
     new_val as u8
 }
 
+/// Convert a u8 to u16 with rescaling process
 fn upscale_low(value: u8) -> u16 {
     let new_val = (value as f32) * (1000.0) / 256.0;
     new_val as u16
