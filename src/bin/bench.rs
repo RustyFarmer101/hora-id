@@ -4,6 +4,8 @@ use tuid::TuidGenerator;
 
 const SIZE: usize = 10_000_000;
 
+// Test how long does it take to generate 10 Million IDs
+// On M1 Pro chip, it takes 4.1 seconds with output of 2.44 Million IDs per second
 fn main() {
     let time = Instant::now();
     let mut data = Vec::with_capacity(SIZE);
