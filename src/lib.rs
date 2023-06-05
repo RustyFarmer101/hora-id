@@ -41,12 +41,6 @@ pub struct TuidParams {
 }
 
 /// TUID Generator with guarantee to generate unique IDs on a single machine
-///
-/// # Benchmark
-/// On my machine running Apple M1 Max chip, the generator produces, on average,
-/// 3.8 Million IDs per second on a single core in release builds
-/// using the bench binary included in the codebase.
-///
 pub struct TuidGenerator {
     /// Unique Machine identifier with support for max 256 unique machines
     machine_id: u8,
@@ -91,12 +85,6 @@ impl TuidGenerator {
 }
 
 /// A time-sorted 8-byte (64-bit) unique identifier
-///
-/// # Breakdown
-/// The first 4 bytes represent the [EPOCH] timestamp
-/// The 5th byte represents timestamp low (in milliseconds)
-/// THe last 3 bytes are random
-///
 #[derive(Debug)]
 pub struct Tuid {
     inner: [u8; 8],

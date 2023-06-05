@@ -1,5 +1,5 @@
 # TUID
-A time-sorted 8-byte unique ID generator for distributed systems.
+A time-sorted 8-byte unique ID generator for distributed systems, micro-services and B-Tree databases.
 
 TUID supports upto 256 unique machines and can theoretically generate 16.7 million unique IDs per second per machine. That's a total of maximum 4.2 billion IDs per second. However, modern computers are not able to hit this limit. See the [performance](#performance) section below for more details.
 
@@ -23,7 +23,7 @@ Generate IDs in a distributed system
 ```rust
 use tuid::{TuidGenerator, Tuid};
 
-let machine_id = 1;
+let machine_id = 1; // You'll ideally get this from environment variable or configuration
 let mut generator: TuidGenerator = TuidGenerator::new(machine_id).unwrap();
 
 let id: Tuid = generator.next();
@@ -38,6 +38,10 @@ let id = Tuid::new().unwrap();
 Note: generating a new ID quickly shall be used during debugging or development phase only as it doesn't gaurantee every ID to be unique when generating 100s of IDs per second.
 
 # Performance
-On a Macbook Pro with M1 Max chip, the included benchmark in `src/bin/bench.rs` produces 3.8 Million IDs per second on a single thread. Given that the theoretical limit is 16.7 Million IDs per second, the package will scale well with future CPUs. In the benchmark example, M1 Max chip only hits 22% of the limit.
+On a Macbook Pro with M1 Max chip, the included benchmark in 
+`src/bin/bench.rs` produces 7.4 Million IDs per second on a single thread. 
+Given that the theoretical limit is 16.7 Million IDs per second, 
+the package will scale well with future CPUs. 
+In the benchmark example, M1 Max chip only hits 44% of the limit.
 
 To run the benchmark, execute `cargo r --bin bench --release` on your system.

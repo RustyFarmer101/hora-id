@@ -4,14 +4,13 @@ use tuid::TuidGenerator;
 
 const SIZE: usize = 10_000_000;
 
-// Test how long does it take to generate 10 Million IDs
-// On M1 Pro chip, it takes 4.1 seconds with output of 2.44 Million IDs per second
 fn main() {
-    let time = Instant::now();
     let mut data = Vec::with_capacity(SIZE);
     let mut generator = TuidGenerator::new(101).expect("Error B123l");
 
     let mut counter = 0;
+    let time = Instant::now();
+
     loop {
         counter += 1;
         if counter > SIZE {
@@ -22,6 +21,9 @@ fn main() {
         data.push(id.to_string());
     }
 
+    let done = time.elapsed();
+
+    // Analysis to find duplicates
     let mut map: HashMap<String, u16> = HashMap::with_capacity(SIZE);
     for id in data {
         match map.get_mut(&id) {
@@ -32,16 +34,11 @@ fn main() {
                 *val += 1;
             }
         }
-        // let counter = map.entry(&id).or_insert(0);
-        // *counter += 1;
     }
-
     let mut counter = 0;
-
     for (key, value) in map.into_iter() {
         if value > 1 {
             counter += 1;
-            println!("{key} -> {value}");
         }
     }
 
@@ -50,6 +47,6 @@ fn main() {
         SIZE,
         SIZE - counter,
         counter,
-        time.elapsed()
+        done
     );
 }
