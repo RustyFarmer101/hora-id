@@ -143,6 +143,18 @@ impl Tuid {
         Self { inner: tuid }
     }
 
+    /// Convert a [Tuid] to a number
+    pub fn to_u64(&self) -> u64 {
+        u64::from_be_bytes(self.inner)
+    }
+
+    /// Convert a number to [Tuid]
+    pub fn from_u64(num: u64) -> Option<Self> {
+        let d: [u8; 8] = num.to_be_bytes();
+        let id = Self { inner: d };
+        Some(id)
+    }
+
     /// Convert a [Tuid] to a [String]
     pub fn to_string(&self) -> String {
         format!(
@@ -219,6 +231,15 @@ mod tests {
         let id = Tuid::from_str(&s);
         let derived_id = id.unwrap();
         assert_eq!(source_id.to_string(), derived_id.to_string());
+    }
+
+    #[test]
+    fn u64s() {
+        let num = 57630818184577258;
+        let id = Tuid::from_u64(num);
+        assert!(id.is_some());
+        let id = id.unwrap();
+        assert_eq!(id.to_u64(), num);
     }
 
     #[cfg(feature = "chrono")]
