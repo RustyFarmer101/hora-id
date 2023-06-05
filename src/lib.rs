@@ -5,7 +5,8 @@
 //! TUID has 3 parts
 //! - 4 byte timestamp high
 //! - 1 byte timestamp low
-//! - 3 bytes of randomness
+//! - 1 byte for machine ID (0-255)
+//! - 2 bytes for sequence number
 
 #[cfg(feature = "chrono")]
 use chrono::{DateTime, NaiveDateTime, Utc};
@@ -33,32 +34,35 @@ fn current_epoch() -> Result<u64, String> {
     Ok(now)
 }
 
+pub struct TuidParams {
+    machine_id: u8,
+    epoch: u64,
+    sequence: u16,
+}
+
 /// TUID Generator with guarantee to generate unique IDs on a single machine
 ///
 /// # Benchmark
 /// On my machine running Apple M1 Max chip, the generator produces, on average,
-/// 2.5 Million IDs per second on a single core in release builds
+/// 3.8 Million IDs per second on a single core in release builds
 /// using the bench binary included in the codebase.
 ///
 pub struct TuidGenerator {
     /// Unique Machine identifier with support for max 256 unique machines
     machine_id: u8,
-    /// History of generated IDs to ensure uniqueness
-    queue: HashSet<[u8; 8]>,
-    /// Last time the queue was cleared
-    last_clean: u32,
+    /// sequence number in the same epoch,
+    sequence: u16,
     /// Last time an ID was generated
-    last_gen: u32,
+    last_gen: u64,
 }
 
 impl TuidGenerator {
     pub fn new(machine_id: u8) -> Result<Self, String> {
         let epoch = current_epoch()?;
-        let epoch = (epoch / 1000) as u32;
+        let epoch = rescale_epoch(epoch);
         Ok(Self {
             machine_id,
-            queue: HashSet::new(),
-            last_clean: epoch,
+            sequence: 0,
             last_gen: epoch,
         })
     }
@@ -67,20 +71,20 @@ impl TuidGenerator {
     pub fn next(&mut self) -> Tuid {
         loop {
             let epoch = current_epoch().unwrap();
-            // clean the queue
-            let epoch_high = (epoch / 1000) as u32;
-            if epoch_high > self.last_gen && !self.queue.is_empty() {
-                self.last_clean = epoch_high;
-                self.queue.clear();
+            let scaled_epoch = rescale_epoch(epoch);
+            if scaled_epoch > self.last_gen {
+                self.sequence = 0;
             }
+
             // generate_id
-            let id = Tuid::with_epoch(Some(self.machine_id), epoch);
-            // detect duplicate ID
-            if self.queue.contains(&id.inner) {
-                continue;
-            }
-            self.queue.insert(id.inner.clone());
-            self.last_gen = epoch_high;
+            self.sequence += 1;
+            let params = TuidParams {
+                machine_id: self.machine_id,
+                epoch,
+                sequence: self.sequence + 1,
+            };
+            let id = Tuid::with_params(params);
+            self.last_gen = scaled_epoch;
             break id;
         }
     }
@@ -107,7 +111,12 @@ impl Tuid {
     ///
     pub fn new(machine_id: Option<u8>) -> Result<Self, String> {
         let epoch = current_epoch()?;
-        let id = Self::with_epoch(machine_id, epoch);
+        let params = TuidParams {
+            machine_id: machine_id.unwrap_or(0),
+            epoch,
+            sequence: 0,
+        };
+        let id = Self::with_params(params);
         Ok(id)
     }
 
@@ -117,9 +126,9 @@ impl Tuid {
     /// This method is mainly used by the [TuidGenerator] generator to get a new [Tuid].
     /// THe `Tuid::new` method also calls this method after getting the current epoch.
     ///
-    fn with_epoch(machine_id: Option<u8>, epoch: u64) -> Self {
-        let high = (epoch / 1000) as u32;
-        let low = (epoch % 1000) as u16;
+    fn with_params(params: TuidParams) -> Self {
+        let high = (params.epoch / 1000) as u32;
+        let low = (params.epoch % 1000) as u16;
 
         // create a default bytes array
         let mut tuid = [0u8; 8];
@@ -130,15 +139,18 @@ impl Tuid {
         tuid[1] = bytes[1];
         tuid[2] = bytes[2];
         tuid[3] = bytes[3];
-
         // set time low
         tuid[4] = rescale_low(low);
 
-        // add randomness
-        let mut rng = thread_rng();
-        tuid[5] = machine_id.unwrap_or_else(|| rng.gen::<u8>());
-        tuid[6] = rng.gen::<u8>();
-        tuid[7] = rng.gen::<u8>();
+        // add machine_id
+        tuid[5] = params.machine_id;
+
+        // add sequence
+        let sequence_high = ((params.sequence >> 8) & 0xFF) as u8;
+        let sequence_low = (params.sequence & 0xFF) as u8;
+
+        tuid[6] = sequence_high;
+        tuid[7] = sequence_low;
 
         Self { inner: tuid }
     }
@@ -198,6 +210,14 @@ impl Tuid {
         let datetime = DateTime::<Utc>::from_utc(timestamp, Utc);
         datetime
     }
+}
+
+fn rescale_epoch(value: u64) -> u64 {
+    let high = value / 1000;
+    let low = (value % 1000) as u16;
+    let low = (low as f32) * 0.256;
+    let low = low as u64;
+    high * 1000 + low
 }
 
 /// Convert u16 to u8 with rescaling process
@@ -270,6 +290,21 @@ mod tests {
     fn rescale() {
         let value = upscale_low(rescale_low(500));
         assert_eq!(value, 500);
+    }
+
+    #[test]
+    fn epoch_rescaling() {
+        // test 1
+        let value = 1672531200000;
+        assert_eq!(rescale_epoch(value), value);
+        // test 2
+        assert_eq!(rescale_epoch(1672531200003), 1672531200000);
+        // test 3
+        assert_eq!(rescale_epoch(1672531200005), 1672531200001);
+        assert_eq!(rescale_epoch(1672531200006), 1672531200001);
+        // test 4
+        assert_eq!(rescale_epoch(1672531200998), 1672531200255);
+        assert_eq!(rescale_epoch(1672531200999), 1672531200255);
     }
 }
 
