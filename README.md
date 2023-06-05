@@ -26,3 +26,8 @@ Quickly generate a new ID.
 let id = Tuid::new().unwrap();
 ```
 Note: generating a new ID quickly shall be used during debugging or development phase only as it doesn't gaurantee every ID to be unique when generating 100s of IDs per second.
+
+# Performance
+On a Macbook Pro with M1 Max chip, the included benchmark in `src/bin/bench.rs` produces 2.44 Million IDs per second on a single thread. Given that the theoretical limit is 2.5 Million IDs per second, modern CPUs are able to come close to this limit. In the benchmark example, M1 Max chip hits 97.6% of the limit.
+
+To run the benchmark, execute `cargo r --bin bench --release` on your system.
