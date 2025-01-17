@@ -1,7 +1,14 @@
 [package]
 name = "hora-id"
+description = "A 64-bit time-based sorted unique ID generator that includes the current time in the ID"
 version = "0.1.0"
 edition = "2021"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+homepage = "https://github.com/thumperca/hora-id"
+repository = "https://github.com/thumperca/hora-id"
+keywords = ["id", "uuid", "ulid", "sortable", "identifier"]
+categories = ["data-structures"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [features]
