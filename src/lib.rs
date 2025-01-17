@@ -2,18 +2,38 @@
 //! IDs are time-sorted and 8 bytes long, which is half the length of a UUID and ULID
 //!
 //! ## Composition
-//! TUID has 3 parts
+//! HoraID has 3 parts
 //! - 4 byte timestamp high
 //! - 1 byte timestamp low
 //! - 1 byte for machine ID (0-255)
 //! - 2 bytes for sequence number
+//!
+//! ## Usage
+//! Generate IDs in a distributed system
+//! ```no_run
+//! use hora_id::{HoraGenerator, HoraId};
+//!
+//! let machine_id = 1; // You'll ideally get this from environment variable or configuration
+//!  let mut generator: HoraGenerator = HoraGenerator::new(machine_id).unwrap();
+//!
+//! let id: HoraId = generator.next();
+//! println!("{}", id.to_string()); // example: '00cd01daff010002'
+//! println!("{}", id.to_u64()); // example: 57704355272392706
+//! ```
+//!
+//! Quickly generate a new ID.
+//!
+//! ```no_run
+//! use hora_id::HoraId;
+//! let id = HoraId::new(None).unwrap();
+//! ```
 
 #[cfg(feature = "chrono")]
 use chrono::{DateTime, NaiveDateTime, Utc};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-/// Unix Epoch on Jan 01 2023 12:00:00 am
-const EPOCH: u64 = 1672531200000;
+/// Unix Epoch on Jan 01 2024 12:00:00 am
+const EPOCH: u64 = 1735689600000;
 
 /// Get the current epoch with base epoch starting at [EPOCH]
 ///
@@ -32,14 +52,26 @@ fn current_epoch() -> Result<u64, String> {
     Ok(now)
 }
 
-pub struct TuidParams {
+pub(crate) struct HoraParams {
     machine_id: u8,
     epoch: u64,
     sequence: u16,
 }
 
-/// TUID Generator with guarantee to generate unique IDs on a single machine
-pub struct TuidGenerator {
+/// ID Generator with guarantee to generate time-based unique IDs on a single machine
+///
+/// ## Usage
+/// ```no_run
+/// use hora_id::{HoraGenerator, HoraId};
+///
+/// let mut generator = HoraGenerator::new(1).unwrap();
+///
+/// // generate one ID
+/// let id: HoraId = generator.next();
+/// // generate another ID
+/// let another_id: HoraId = generator.next();
+/// ```
+pub struct HoraGenerator {
     /// Unique Machine identifier with support for max 256 unique machines
     machine_id: u8,
     /// sequence number in the same epoch,
@@ -48,7 +80,7 @@ pub struct TuidGenerator {
     last_gen: u64,
 }
 
-impl TuidGenerator {
+impl HoraGenerator {
     pub fn new(machine_id: u8) -> Result<Self, String> {
         let epoch = current_epoch()?;
         let epoch = rescale_epoch(epoch);
@@ -59,8 +91,8 @@ impl TuidGenerator {
         })
     }
 
-    /// Generate a new TUID
-    pub fn next(&mut self) -> Tuid {
+    /// Generate a new [HoraId]
+    pub fn next(&mut self) -> HoraId {
         loop {
             let epoch = current_epoch().unwrap();
             let scaled_epoch = rescale_epoch(epoch);
@@ -70,12 +102,12 @@ impl TuidGenerator {
 
             // generate_id
             self.sequence += 1;
-            let params = TuidParams {
+            let params = HoraParams {
                 machine_id: self.machine_id,
                 epoch,
                 sequence: self.sequence + 1,
             };
-            let id = Tuid::with_params(params);
+            let id = HoraId::with_params(params);
             self.last_gen = scaled_epoch;
             break id;
         }
@@ -84,12 +116,12 @@ impl TuidGenerator {
 
 /// A time-sorted 8-byte (64-bit) unique identifier
 #[derive(Debug)]
-pub struct Tuid {
+pub struct HoraId {
     inner: [u8; 8],
 }
 
-impl Tuid {
-    /// Quickly generate a new TUID
+impl HoraId {
+    /// Quickly generate a new [HoraId]
     ///
     /// ## Caution
     /// Calling this method doesn't guarantee a unique ID for every call.
@@ -97,7 +129,7 @@ impl Tuid {
     ///
     pub fn new(machine_id: Option<u8>) -> Result<Self, String> {
         let epoch = current_epoch()?;
-        let params = TuidParams {
+        let params = HoraParams {
             machine_id: machine_id.unwrap_or(0),
             epoch,
             sequence: 0,
@@ -106,13 +138,13 @@ impl Tuid {
         Ok(id)
     }
 
-    /// Generate a new TUID with custom epoch
+    /// Generate a new HoraId with custom epoch
     ///
     /// ## More info
-    /// This method is mainly used by the [TuidGenerator] generator to get a new [Tuid].
-    /// THe `Tuid::new` method also calls this method after getting the current epoch.
+    /// This method is mainly used by the [HoraGenerator] generator to get a new [HoraId].
+    /// THe `HoraId::new` method also calls this method after getting the current epoch.
     ///
-    fn with_params(params: TuidParams) -> Self {
+    fn with_params(params: HoraParams) -> Self {
         let high = (params.epoch / 1000) as u32;
         let low = (params.epoch % 1000) as u16;
 
@@ -141,19 +173,19 @@ impl Tuid {
         Self { inner: tuid }
     }
 
-    /// Convert a [Tuid] to a number
+    /// Convert a [HoraId] to a number
     pub fn to_u64(&self) -> u64 {
         u64::from_be_bytes(self.inner)
     }
 
-    /// Convert a number to [Tuid]
+    /// Convert a number to [HoraId]
     pub fn from_u64(num: u64) -> Option<Self> {
         let d: [u8; 8] = num.to_be_bytes();
         let id = Self { inner: d };
         Some(id)
     }
 
-    /// Convert a [Tuid] to a [String]
+    /// Convert a [HoraId] to a [String]
     pub fn to_string(&self) -> String {
         format!(
             "{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
@@ -168,7 +200,7 @@ impl Tuid {
         )
     }
 
-    /// Create a [Tuid] from a string slice
+    /// Create a [HoraId] from a string slice
     pub fn from_str(s: &str) -> Option<Self> {
         if s.len() != 16 {
             return None;
@@ -179,7 +211,7 @@ impl Tuid {
         Some(id)
     }
 
-    /// Retrieve a chrono datetime from [Tuid]
+    /// Retrieve a chrono datetime from [HoraId]
     /// This conditionally includes a module which implements chrono support.
     #[cfg(feature = "chrono")]
     pub fn to_chrono(&self) -> DateTime<Utc> {
@@ -227,15 +259,15 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let id = Tuid::new(None);
+        let id = HoraId::new(None);
         assert!(id.is_ok());
     }
 
     #[test]
     fn strings() {
-        let source_id = Tuid::new(None).unwrap();
+        let source_id = HoraId::new(None).unwrap();
         let s = source_id.to_string();
-        let id = Tuid::from_str(&s);
+        let id = HoraId::from_str(&s);
         let derived_id = id.unwrap();
         assert_eq!(source_id.to_string(), derived_id.to_string());
     }
@@ -243,7 +275,7 @@ mod tests {
     #[test]
     fn u64s() {
         let num = 57630818184577258;
-        let id = Tuid::from_u64(num);
+        let id = HoraId::from_u64(num);
         assert!(id.is_some());
         let id = id.unwrap();
         assert_eq!(id.to_u64(), num);
@@ -252,7 +284,7 @@ mod tests {
     #[cfg(feature = "chrono")]
     #[test]
     fn chrono() {
-        let id = Tuid::new(None).unwrap();
+        let id = HoraId::new(None).unwrap();
         let time = id.to_chrono();
         let now = Utc::now();
         assert_eq!(now.date_naive(), time.date_naive());
@@ -301,7 +333,7 @@ mod gen_tests {
 
     #[test]
     fn it_works() {
-        let generator = TuidGenerator::new(1);
+        let generator = HoraGenerator::new(1);
         assert!(generator.is_ok());
         let mut generator = generator.unwrap();
         generator.next();

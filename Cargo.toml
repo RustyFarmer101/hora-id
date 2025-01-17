@@ -1,5 +1,5 @@
 [package]
-name = "tuid"
+name = "hora-id"
 version = "0.1.0"
 edition = "2021"
 

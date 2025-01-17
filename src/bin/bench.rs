@@ -1,12 +1,12 @@
+use hora_id::HoraGenerator;
 use std::collections::HashMap;
 use std::time::Instant;
-use tuid::TuidGenerator;
 
 const SIZE: usize = 10_000_000;
 
 fn main() {
     let mut data = Vec::with_capacity(SIZE);
-    let mut generator = TuidGenerator::new(101).expect("Error B123l");
+    let mut generator = HoraGenerator::new(101).expect("Error B123l");
 
     let mut counter = 0;
     let time = Instant::now();
