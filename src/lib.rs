@@ -10,8 +10,6 @@
 
 #[cfg(feature = "chrono")]
 use chrono::{DateTime, NaiveDateTime, Utc};
-use rand::prelude::*;
-use std::collections::HashSet;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Unix Epoch on Jan 01 2023 12:00:00 am
@@ -215,6 +213,7 @@ fn rescale_low(value: u16) -> u8 {
 }
 
 /// Convert a u8 to u16 with rescaling process
+#[allow(dead_code)]
 fn upscale_low(value: u8) -> u16 {
     let new_val = (value as f32) * (1000.0) / 256.0;
     new_val as u16
@@ -305,6 +304,6 @@ mod gen_tests {
         let generator = TuidGenerator::new(1);
         assert!(generator.is_ok());
         let mut generator = generator.unwrap();
-        let id = generator.next();
+        generator.next();
     }
 }

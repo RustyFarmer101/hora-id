@@ -36,7 +36,7 @@ fn main() {
         }
     }
     let mut counter = 0;
-    for (key, value) in map.into_iter() {
+    for (_key, value) in map.into_iter() {
         if value > 1 {
             counter += 1;
         }
