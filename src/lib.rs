@@ -1,3 +1,4 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
 //! Time sorted unique ID generator
 //! IDs are time-sorted and 8 bytes long, which is half the length of a UUID and ULID
 //!
@@ -19,6 +20,7 @@
 //! let id: HoraId = generator.next();
 //! println!("{}", id.to_string()); // example: '00cd01daff010002'
 //! println!("{}", id.to_u64()); // example: 57704355272392706
+//! println!("{}", id.to_datetime()); // example: 2024-01-01 00:00:00
 //! ```
 //!
 //! Quickly generate a new ID.
@@ -214,7 +216,8 @@ impl HoraId {
     /// Retrieve a chrono datetime from [HoraId]
     /// This conditionally includes a module which implements chrono support.
     #[cfg(feature = "chrono")]
-    pub fn to_chrono(&self) -> DateTime<Utc> {
+    #[cfg_attr(docsrs, doc(cfg(feature = "chrono")))]
+    pub fn to_datetime(&self) -> NaiveDateTime {
         let mut high = [0; 4];
         for i in 0..4 {
             high[i] = self.inner[i];
@@ -224,9 +227,15 @@ impl HoraId {
         let low = upscale_low(low);
 
         let timestamp = (high as u64 * 1000) + low as u64 + EPOCH;
-        let timestamp = NaiveDateTime::from_timestamp_millis(timestamp as i64).unwrap();
-        let datetime = DateTime::<Utc>::from_utc(timestamp, Utc);
-        datetime
+        NaiveDateTime::from_timestamp_millis(timestamp as i64).unwrap()
+    }
+
+    /// Retrieve a chrono [Utc] datetime from [HoraId]
+    #[cfg(feature = "chrono")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "chrono")))]
+    pub fn to_utc(&self) -> DateTime<Utc> {
+        let timestamp = self.to_datetime();
+        DateTime::<Utc>::from_utc(timestamp, Utc)
     }
 }
 
@@ -285,7 +294,7 @@ mod tests {
     #[test]
     fn chrono() {
         let id = HoraId::new(None).unwrap();
-        let time = id.to_chrono();
+        let time = id.to_utc();
         let now = Utc::now();
         assert_eq!(now.date_naive(), time.date_naive());
         assert_eq!(now.hour(), time.hour());
@@ -331,6 +340,7 @@ mod tests {
 mod gen_tests {
     use super::*;
 
+    #[cfg(feature = "chrono")]
     #[test]
     fn it_works() {
         let generator = HoraGenerator::new(1);
