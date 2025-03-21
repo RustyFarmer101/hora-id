@@ -213,8 +213,12 @@ impl HoraId {
         Some(id)
     }
 
-    /// Retrieve a chrono datetime from [HoraId]
-    /// This conditionally includes a module which implements chrono support.
+    /// Get the byte representation of [HoraId]
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.inner
+    }
+
+    /// Retrieve a chrono [NaiveDateTime] from [HoraId]
     #[cfg(feature = "chrono")]
     #[cfg_attr(docsrs, doc(cfg(feature = "chrono")))]
     pub fn to_datetime(&self) -> NaiveDateTime {
