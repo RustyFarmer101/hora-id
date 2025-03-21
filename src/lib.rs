@@ -20,7 +20,7 @@
 //! let id: HoraId = generator.next();
 //! println!("{}", id.to_string()); // example: '00cd01daff010002'
 //! println!("{}", id.to_u64()); // example: 57704355272392706
-//! println!("{}", id.to_datetime()); // example: 2024-01-01 00:00:00
+//! println!("{}", id.to_datetime()); // example: 2025-03-20 00:00:00
 //! ```
 //!
 //! Quickly generate a new ID.
