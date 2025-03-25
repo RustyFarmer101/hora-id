@@ -24,6 +24,14 @@ HoraID has 4 parts:
 - 1 byte machine
 - 2 bytes of sequence
 
+# Installation
+
+```bash
+cargo add hora_id
+# if `to_datetime` or `to_utc` methods are needed
+cargo add hora_id --features chrono
+```
+
 # Usage
 
 Generate IDs in a distributed system
@@ -37,6 +45,8 @@ let mut generator: HoraGenerator = HoraGenerator::new(machine_id).unwrap();
 let id: HoraId = generator.next();
 println!("{}", id.to_string()); // example: '00cd01daff010002'
 println!("{}", id.to_u64()); // example: 57704355272392706
+println!("{}", id.to_datetime()); // example: 2025-01-01 14:00:00
+println!("{}", id.to_utc()); // example: 2025-01-01 14:00:00 UTC
 ```
 
 Quickly generate a new ID.

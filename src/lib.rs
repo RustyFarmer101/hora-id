@@ -21,6 +21,7 @@
 //! println!("{}", id.to_string()); // example: '00cd01daff010002'
 //! println!("{}", id.to_u64()); // example: 57704355272392706
 //! println!("{}", id.to_datetime()); // example: 2025-03-20 00:00:00
+//! println!("{}", id.to_utc()); // example: 2025-03-20 00:00:00 UTC
 //! ```
 //!
 //! Quickly generate a new ID.
@@ -117,7 +118,7 @@ impl HoraGenerator {
 }
 
 /// A time-sorted 8-byte (64-bit) unique identifier
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HoraId {
     inner: [u8; 8],
 }
@@ -292,6 +293,22 @@ mod tests {
         assert!(id.is_some());
         let id = id.unwrap();
         assert_eq!(id.to_u64(), num);
+    }
+
+    #[test]
+    fn eq() {
+        let num = 57630818184577258;
+        let id = HoraId::from_u64(num).unwrap();
+        let id2 = HoraId::from_u64(num).unwrap();
+        assert_eq!(id, id2);
+    }
+
+    #[test]
+    fn clone() {
+        let num = 57630818184577258;
+        let id = HoraId::from_u64(num).unwrap();
+        let id2 = id.clone();
+        assert_eq!(id, id2);
     }
 
     #[cfg(feature = "chrono")]
