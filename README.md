@@ -77,5 +77,4 @@ To run the benchmark, execute `cargo r --bin bench --release` on your system.
 # Changelog
 
 - 0.3 - Added `rand()` method to quickly generate a random ID
-- 0.2 - Added `to_datetime` and `to_utc` methods (requires `chrono` feature)
-- 0.1 - Initial release
+
