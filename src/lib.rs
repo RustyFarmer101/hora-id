@@ -28,7 +28,7 @@
 //!
 //! ```no_run
 //! use hora_id::HoraId;
-//! let id = HoraId::new(None).unwrap();
+//! let id = HoraId::rand().unwrap();
 //! ```
 
 #[cfg(feature = "chrono")]
@@ -136,6 +136,21 @@ impl HoraId {
             machine_id: machine_id.unwrap_or(0),
             epoch,
             sequence: 0,
+        };
+        let id = Self::with_params(params);
+        Ok(id)
+    }
+
+    /// Quickly generate a new random [HoraId]
+    ///
+    /// ## More info
+    /// This method generates a random machine_id and sequence number
+    pub fn rand() -> Result<Self, String> {
+        let epoch = current_epoch()?;
+        let params = HoraParams {
+            machine_id: rand::random::<u8>(),
+            epoch,
+            sequence: rand::random::<u16>(),
         };
         let id = Self::with_params(params);
         Ok(id)
@@ -275,6 +290,15 @@ mod tests {
     fn it_works() {
         let id = HoraId::new(None);
         assert!(id.is_ok());
+    }
+
+    #[test]
+    fn random() {
+        let id1 = HoraId::rand();
+        assert!(id1.is_ok());
+        let id2 = HoraId::rand();
+        assert!(id2.is_ok());
+        assert_ne!(id1.unwrap(), id2.unwrap());
     }
 
     #[test]

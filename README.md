@@ -24,6 +24,11 @@ HoraID has 4 parts:
 - 1 byte machine
 - 2 bytes of sequence
 
+When generating ID with `rand()` method, it has:
+
+- 5 byte timestamp
+- 3 byte random
+
 # Installation
 
 ```bash
@@ -53,11 +58,11 @@ Quickly generate a new ID.
 
 ```no_run
 use hora_id::HoraId;
-let id = HoraId::new(None).unwrap();
+let id = HoraId::rand().unwrap();
 ```
 
-Note: generating a new ID quickly shall be used during debugging or development phase only as it doesn't gaurantee every
-ID to be unique when generating 100s of IDs per second.
+Note: `rand()` uses the system random number generator to generate a random machine ID and sequence.
+This method is not optimal for generating large number of IDs per second.
 
 # Performance
 
@@ -68,3 +73,9 @@ the package will scale well with future CPUs.
 In the benchmark example, M1 Max chip only hits 44% of the limit.
 
 To run the benchmark, execute `cargo r --bin bench --release` on your system.
+
+# Changelog
+
+- 0.3 - Added `rand()` method to quickly generate a random ID
+- 0.2 - Added `to_datetime` and `to_utc` methods (requires `chrono` feature)
+- 0.1 - Initial release

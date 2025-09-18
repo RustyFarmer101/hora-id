@@ -1,12 +1,12 @@
 [package]
 name = "hora-id"
 description = "A 64-bit time-based sorted unique ID generator that includes the current time in the ID"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
-homepage = "https://github.com/thumperca/hora-id"
-repository = "https://github.com/thumperca/hora-id"
+homepage = "https://github.com/RustyFarmer101/hora-id"
+repository = "https://github.com/RustyFarmer101/hora-id"
 keywords = ["id", "uuid", "ulid", "sortable", "identifier"]
 categories = ["data-structures"]
 
@@ -19,3 +19,4 @@ chrono = ["dep:chrono"]
 
 [dependencies]
 chrono = { version = "0.4.23", optional = true }
+rand = "0.9.2"
